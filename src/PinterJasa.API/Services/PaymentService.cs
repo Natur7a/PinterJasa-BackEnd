@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using PinterJasa.API.Configuration;
 using PinterJasa.API.Data;
 using PinterJasa.API.DTOs.Payments;
+using PinterJasa.API.DTOs.Xendit;
 using PinterJasa.API.Models;
 using PinterJasa.API.Services.Interfaces;
 
@@ -9,15 +12,21 @@ namespace PinterJasa.API.Services;
 public class PaymentService : IPaymentService
 {
     private readonly AppDbContext _db;
+    private readonly IXenditService _xenditService;
+    private readonly XenditConfig _xenditConfig;
+    private readonly ILogger<PaymentService> _logger;
 
-    public PaymentService(AppDbContext db)
+    public PaymentService(AppDbContext db, IXenditService xenditService, IOptions<XenditConfig> xenditConfig, ILogger<PaymentService> logger)
     {
         _db = db;
+        _xenditService = xenditService;
+        _xenditConfig = xenditConfig.Value;
+        _logger = logger;
     }
 
     public async Task<PaymentResponse> CreatePaymentAsync(Guid customerId, Guid orderId, string method)
     {
-        var order = await _db.Orders.FindAsync(orderId)
+        var order = await _db.Orders.Include(o => o.Customer).FirstOrDefaultAsync(o => o.Id == orderId)
             ?? throw new KeyNotFoundException($"Order {orderId} not found.");
 
         if (order.CustomerId != customerId)
@@ -43,6 +52,31 @@ public class PaymentService : IPaymentService
         order.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        try
+        {
+            var invoiceRequest = new XenditInvoiceRequest
+            {
+                ExternalId = payment.Id.ToString(),
+                Amount = payment.Amount,
+                PayerEmail = order.Customer.Email,
+                Description = $"Payment for order {orderId}",
+                SuccessRedirectUrl = _xenditConfig.SuccessRedirectUrl,
+                FailureRedirectUrl = _xenditConfig.FailureRedirectUrl
+            };
+
+            var invoice = await _xenditService.CreateInvoiceAsync(invoiceRequest);
+
+            payment.XenditInvoiceId = invoice.Id;
+            payment.XenditInvoiceUrl = invoice.InvoiceUrl;
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't fail the payment creation — invoice can be retried
+            _logger.LogError(ex, "Failed to create Xendit invoice for payment {PaymentId}", payment.Id);
+        }
+
         return MapToResponse(payment);
     }
 
@@ -79,6 +113,8 @@ public class PaymentService : IPaymentService
         Status = p.Status,
         GatewayRef = p.GatewayRef,
         PaidAt = p.PaidAt,
-        CreatedAt = p.CreatedAt
+        CreatedAt = p.CreatedAt,
+        XenditInvoiceId = p.XenditInvoiceId,
+        XenditInvoiceUrl = p.XenditInvoiceUrl
     };
 }

@@ -11,4 +11,6 @@ public class PaymentResponse
     public string? GatewayRef { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? XenditInvoiceUrl { get; set; }
+    public string? XenditInvoiceId { get; set; }
 }

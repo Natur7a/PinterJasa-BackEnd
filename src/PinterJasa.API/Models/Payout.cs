@@ -13,6 +13,7 @@ public class Payout
     public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string? XenditDisbursementId { get; set; }
 
     public Order Order { get; set; } = null!;
     public Provider Provider { get; set; } = null!;

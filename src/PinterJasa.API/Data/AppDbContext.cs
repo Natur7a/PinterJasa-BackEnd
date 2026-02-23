@@ -53,6 +53,9 @@ public class AppDbContext : DbContext
             e.Property(p => p.IsActive).HasColumnName("is_active");
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+            e.Property(p => p.BankCode).HasColumnName("bank_code").HasMaxLength(20);
+            e.Property(p => p.BankAccountNumber).HasColumnName("bank_account_number").HasMaxLength(30);
+            e.Property(p => p.BankAccountName).HasColumnName("bank_account_name").HasMaxLength(100);
             e.HasOne(p => p.User)
                 .WithOne(u => u.Provider)
                 .HasForeignKey<Provider>(p => p.UserId);
@@ -139,6 +142,8 @@ public class AppDbContext : DbContext
             e.Property(p => p.GatewayRef).HasColumnName("gateway_ref");
             e.Property(p => p.PaidAt).HasColumnName("paid_at");
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
+            e.Property(p => p.XenditInvoiceId).HasColumnName("xendit_invoice_id");
+            e.Property(p => p.XenditInvoiceUrl).HasColumnName("xendit_invoice_url");
             e.HasOne(p => p.Order)
                 .WithOne(o => o.Payment)
                 .HasForeignKey<Payment>(p => p.OrderId);
@@ -164,6 +169,7 @@ public class AppDbContext : DbContext
             e.Property(p => p.PaidAt).HasColumnName("paid_at");
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+            e.Property(p => p.XenditDisbursementId).HasColumnName("xendit_disbursement_id");
             e.HasOne(p => p.Order)
                 .WithOne(o => o.Payout)
                 .HasForeignKey<Payout>(p => p.OrderId);

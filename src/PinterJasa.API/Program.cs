@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PinterJasa.API.Configuration;
 using PinterJasa.API.Data;
 using PinterJasa.API.Middleware;
 using PinterJasa.API.Services;
@@ -79,6 +80,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // DI Services
+builder.Services.Configure<XenditConfig>(builder.Configuration.GetSection("Xendit"));
+builder.Services.AddHttpClient<IXenditService, XenditService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
