@@ -11,6 +11,8 @@ public class Payment
     public string? GatewayRef { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? XenditInvoiceId { get; set; }
+    public string? XenditInvoiceUrl { get; set; }
 
     public Order Order { get; set; } = null!;
     public User Customer { get; set; } = null!;

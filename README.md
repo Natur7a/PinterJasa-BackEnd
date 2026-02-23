@@ -116,4 +116,48 @@ Customer pays → Payment (gross_amount)
 
 - **customer** — can place orders, make payments, write reviews
 - **provider** — can create services, manage assigned orders, receive payouts
-- **admin** — can confirm payments, create and process payouts" 
+- **admin** — can confirm payments, create and process payouts
+
+## Xendit Payment Gateway
+
+PinterJasa uses [Xendit](https://xendit.co) as the payment gateway for processing payments and disbursements.
+
+### Required Environment Variables
+
+| Variable | Description |
+|---|---|
+| `Xendit__SecretApiKey` | Xendit secret API key |
+| `Xendit__PublicApiKey` | Xendit public API key |
+| `Xendit__WebhookVerificationToken` | Token to verify Xendit webhook requests |
+
+### Webhook URLs (configure in Xendit Dashboard)
+
+| Event | URL |
+|---|---|
+| Invoice (payment) | `https://pinterjasa.com/api/webhooks/xendit/invoice` |
+| Disbursement (payout) | `https://pinterjasa.com/api/webhooks/xendit/disbursement` |
+
+### Payment Flow
+
+```
+Customer creates order
+    → Customer creates payment (POST /api/payments)
+    → Backend creates Xendit invoice
+    → Customer redirected to Xendit payment page (invoice_url)
+    → Customer pays via Xendit (bank transfer, ewallet, etc.)
+    → Xendit sends webhook to /api/webhooks/xendit/invoice
+    → Backend updates payment status to "paid"
+    → Backend updates order status to "paid"
+```
+
+### Payout Flow
+
+```
+Order completed
+    → Admin creates payout (POST /api/payouts/{orderId})
+    → Admin processes payout (PATCH /api/payouts/{id}/process)
+    → Backend creates Xendit disbursement
+    → Xendit sends money to provider's bank account
+    → Xendit sends webhook to /api/webhooks/xendit/disbursement
+    → Backend updates payout status to "completed"
+```
