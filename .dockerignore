@@ -1,0 +1,20 @@
+## Ignore build and runtime artifacts
+bin/
+obj/
+out/
+publish/
+
+## Ignore VS files
+.vs/
+*.user
+
+## Ignore sensitive config
+.env
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+## Ignore nuget
+*.nupkg
+.nuget/
+packages/
