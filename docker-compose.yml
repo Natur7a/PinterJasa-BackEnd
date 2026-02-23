@@ -11,6 +11,11 @@ services:
       - Jwt__Key=change-this-to-a-strong-secret-key-at-least-32-chars
       - Jwt__Issuer=PinterJasa
       - Jwt__Audience=PinterJasa
+      - Xendit__SecretApiKey=${XENDIT_SECRET_API_KEY}
+      - Xendit__PublicApiKey=${XENDIT_PUBLIC_API_KEY}
+      - Xendit__WebhookVerificationToken=${XENDIT_WEBHOOK_TOKEN}
+      - Xendit__SuccessRedirectUrl=https://pinterjasa.com/payment/success
+      - Xendit__FailureRedirectUrl=https://pinterjasa.com/payment/failure
     depends_on:
       postgres:
         condition: service_healthy

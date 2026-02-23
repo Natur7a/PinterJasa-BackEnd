@@ -11,6 +11,9 @@ public class Provider
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string? BankCode { get; set; }
+    public string? BankAccountNumber { get; set; }
+    public string? BankAccountName { get; set; }
 
     public User User { get; set; } = null!;
     public ICollection<Service> Services { get; set; } = new List<Service>();
