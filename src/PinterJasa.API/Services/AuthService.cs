@@ -26,8 +26,10 @@ public class AuthService : IAuthService
         if (await _db.Users.AnyAsync(u => u.Email == request.Email))
             throw new InvalidOperationException("Email already in use.");
 
+
         var user = new User
         {
+            Id = Guid.NewGuid(),
             Name = request.Name,
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
