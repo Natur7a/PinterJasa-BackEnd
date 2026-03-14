@@ -15,7 +15,8 @@ public class OrderService : IOrderService
         ["created"] = new[] { "awaiting_payment", "cancelled" },
         ["awaiting_payment"] = new[] { "paid", "cancelled" },
         ["paid"] = new[] { "accepted", "cancelled", "refunded" },
-        ["accepted"] = new[] { "in_progress", "cancelled" },
+        ["accepted"] = new[] { "on_the_way", "in_progress", "cancelled" },
+        ["on_the_way"] = new[] { "in_progress", "cancelled" },
         ["in_progress"] = new[] { "completed" }
     };
 

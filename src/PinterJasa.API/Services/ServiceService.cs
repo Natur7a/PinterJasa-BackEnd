@@ -73,6 +73,42 @@ public class ServiceService : IServiceService
         return services.Select(MapToResponse);
     }
 
+    public async Task<ServiceResponse> UpdateAsync(Guid serviceId, Guid providerId, UpdateServiceRequest request)
+    {
+        var provider = await _db.Providers.FirstOrDefaultAsync(p => p.UserId == providerId)
+            ?? throw new KeyNotFoundException("Provider profile not found.");
+
+        var service = await _db.Services.Include(s => s.Category).FirstOrDefaultAsync(s => s.Id == serviceId)
+            ?? throw new KeyNotFoundException($"Service {serviceId} not found.");
+
+        if (service.ProviderId != provider.Id)
+            throw new UnauthorizedAccessException("You are not authorized to update this service.");
+
+        if (request.Title is not null)
+            service.Title = request.Title;
+
+        if (request.Description is not null)
+            service.Description = request.Description;
+
+        if (request.Price.HasValue)
+            service.Price = request.Price.Value;
+
+        if (request.PriceUnit is not null)
+            service.PriceUnit = request.PriceUnit;
+
+        if (request.Status is not null)
+        {
+            if (request.Status != "active" && request.Status != "inactive")
+                throw new InvalidOperationException("Status must be 'active' or 'inactive'.");
+            service.Status = request.Status;
+        }
+
+        service.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return MapToResponse(service);
+    }
+
     private static ServiceResponse MapToResponse(Service s) => new()
     {
         Id = s.Id,

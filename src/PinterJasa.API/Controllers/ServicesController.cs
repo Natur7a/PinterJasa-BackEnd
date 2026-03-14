@@ -48,4 +48,13 @@ public class ServicesController : ControllerBase
         var services = await _serviceService.GetMyServicesAsync(userId);
         return Ok(services);
     }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "provider")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServiceRequest request)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var service = await _serviceService.UpdateAsync(id, userId, request);
+        return Ok(service);
+    }
 }

@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Payout> Payouts => Set<Payout>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<PlatformConfig> PlatformConfigs => Set<PlatformConfig>();
+    public DbSet<LocationPing> LocationPings => Set<LocationPing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -213,6 +214,30 @@ public class AppDbContext : DbContext
             e.Property(p => p.Value).HasColumnName("value").HasMaxLength(255).IsRequired();
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
             e.HasData(new PlatformConfig { Key = "default_commission_rate", Value = "0.15", UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) });
+        });
+
+        // LocationPing
+        modelBuilder.Entity<LocationPing>(e =>
+        {
+            e.ToTable("location_pings");
+            e.HasKey(lp => lp.Id);
+            e.Property(lp => lp.Id).HasColumnName("id");
+            e.Property(lp => lp.OrderId).HasColumnName("order_id");
+            e.Property(lp => lp.ProviderId).HasColumnName("provider_id");
+            e.Property(lp => lp.Latitude).HasColumnName("latitude");
+            e.Property(lp => lp.Longitude).HasColumnName("longitude");
+            e.Property(lp => lp.AccuracyMeters).HasColumnName("accuracy_meters");
+            e.Property(lp => lp.TimestampUtc).HasColumnName("timestamp_utc");
+            e.HasOne(lp => lp.Order)
+                .WithMany(o => o.LocationPings)
+                .HasForeignKey(lp => lp.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(lp => lp.Provider)
+                .WithMany()
+                .HasForeignKey(lp => lp.ProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(lp => new { lp.OrderId, lp.TimestampUtc })
+                .HasDatabaseName("IX_location_pings_order_id_timestamp_utc");
         });
     }
 }
