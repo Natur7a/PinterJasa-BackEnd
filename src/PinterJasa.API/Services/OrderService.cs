@@ -20,6 +20,23 @@ public class OrderService : IOrderService
         ["in_progress"] = new[] { "completed" }
     };
 
+    // Transitions allowed per role (admin may perform any transition in ValidTransitions)
+    private static readonly Dictionary<string, Dictionary<string, string[]>> RoleAllowedTransitions = new()
+    {
+        ["customer"] = new Dictionary<string, string[]>
+        {
+            ["created"] = new[] { "awaiting_payment", "cancelled" },
+            ["awaiting_payment"] = new[] { "cancelled" },
+        },
+        ["provider"] = new Dictionary<string, string[]>
+        {
+            ["paid"] = new[] { "accepted" },
+            ["accepted"] = new[] { "on_the_way", "in_progress" },
+            ["on_the_way"] = new[] { "in_progress" },
+            ["in_progress"] = new[] { "completed" },
+        },
+    };
+
     public OrderService(AppDbContext db)
     {
         _db = db;
@@ -94,6 +111,19 @@ public class OrderService : IOrderService
                 ?? throw new UnauthorizedAccessException("Provider profile not found.");
             if (order.ProviderId != provider.Id)
                 throw new UnauthorizedAccessException("You are not authorized to update this order.");
+        }
+
+        // Role-based transition enforcement: admins may perform any valid transition;
+        // customers and providers are restricted to their allowed transitions.
+        if (requesterRole != "admin")
+        {
+            if (!RoleAllowedTransitions.TryGetValue(requesterRole, out var roleTransitions)
+                || !roleTransitions.TryGetValue(order.Status, out var roleAllowed)
+                || !roleAllowed.Contains(newStatus))
+            {
+                throw new UnauthorizedAccessException(
+                    $"Role '{requesterRole}' is not permitted to transition order from '{order.Status}' to '{newStatus}'.");
+            }
         }
 
         if (!ValidTransitions.TryGetValue(order.Status, out var allowed) || !allowed.Contains(newStatus))

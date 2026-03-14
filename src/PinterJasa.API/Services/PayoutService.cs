@@ -57,6 +57,10 @@ public class PayoutService : IPayoutService
         var payout = await _db.Payouts.Include(p => p.Provider).FirstOrDefaultAsync(p => p.Id == payoutId)
             ?? throw new KeyNotFoundException($"Payout {payoutId} not found.");
 
+        // Idempotency guard: return existing state if payout is already processing or paid.
+        if (payout.Status == "processing" || payout.Status == "paid")
+            return MapToResponse(payout);
+
         var provider = payout.Provider;
 
         if (string.IsNullOrEmpty(provider.BankCode) ||
