@@ -76,4 +76,83 @@ public class OrderStatusTransitionTests
             TestDbFactory.OrderId, "on_the_way", Guid.NewGuid(), "admin");
         Assert.Equal("on_the_way", result.Status);
     }
+
+    // ── Role-based transition enforcement ──────────────────────────────────
+
+    [Fact]
+    public async Task CustomerCanCancelOwnOrderDuringAwaitingPayment()
+    {
+        var svc = CreateService("customer_cancel_awaiting", "awaiting_payment");
+        var result = await svc.UpdateStatusAsync(
+            TestDbFactory.OrderId, "cancelled", TestDbFactory.CustomerId, "customer");
+        Assert.Equal("cancelled", result.Status);
+    }
+
+    [Fact]
+    public async Task CustomerCannotAcceptOrder_PaidToAccepted()
+    {
+        var svc = CreateService("customer_cannot_accept", "paid");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            svc.UpdateStatusAsync(TestDbFactory.OrderId, "accepted", TestDbFactory.CustomerId, "customer"));
+    }
+
+    [Fact]
+    public async Task CustomerCannotCompleteOrder()
+    {
+        var svc = CreateService("customer_cannot_complete", "in_progress");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            svc.UpdateStatusAsync(TestDbFactory.OrderId, "completed", TestDbFactory.CustomerId, "customer"));
+    }
+
+    [Fact]
+    public async Task ProviderCanAcceptOrder_PaidToAccepted()
+    {
+        var svc = CreateService("provider_can_accept", "paid");
+        var result = await svc.UpdateStatusAsync(
+            TestDbFactory.OrderId, "accepted", TestDbFactory.ProviderUserId, "provider");
+        Assert.Equal("accepted", result.Status);
+    }
+
+    [Fact]
+    public async Task ProviderCanCompleteOrder()
+    {
+        var svc = CreateService("provider_can_complete", "in_progress");
+        var result = await svc.UpdateStatusAsync(
+            TestDbFactory.OrderId, "completed", TestDbFactory.ProviderUserId, "provider");
+        Assert.Equal("completed", result.Status);
+    }
+
+    [Fact]
+    public async Task ProviderCannotRefundOrder()
+    {
+        var svc = CreateService("provider_cannot_refund", "paid");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            svc.UpdateStatusAsync(TestDbFactory.OrderId, "refunded", TestDbFactory.ProviderUserId, "provider"));
+    }
+
+    [Fact]
+    public async Task ProviderCannotCancelAcceptedOrder()
+    {
+        var svc = CreateService("provider_cannot_cancel_accepted", "accepted");
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            svc.UpdateStatusAsync(TestDbFactory.OrderId, "cancelled", TestDbFactory.ProviderUserId, "provider"));
+    }
+
+    [Fact]
+    public async Task AdminCanRefundOrder()
+    {
+        var svc = CreateService("admin_can_refund", "paid");
+        var result = await svc.UpdateStatusAsync(
+            TestDbFactory.OrderId, "refunded", Guid.NewGuid(), "admin");
+        Assert.Equal("refunded", result.Status);
+    }
+
+    [Fact]
+    public async Task AdminCanCancelAcceptedOrder()
+    {
+        var svc = CreateService("admin_can_cancel_accepted", "accepted");
+        var result = await svc.UpdateStatusAsync(
+            TestDbFactory.OrderId, "cancelled", Guid.NewGuid(), "admin");
+        Assert.Equal("cancelled", result.Status);
+    }
 }
