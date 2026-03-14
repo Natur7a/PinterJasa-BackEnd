@@ -21,4 +21,5 @@ public class Order
     public Payment? Payment { get; set; }
     public Payout? Payout { get; set; }
     public Review? Review { get; set; }
+    public ICollection<LocationPing> LocationPings { get; set; } = new List<LocationPing>();
 }

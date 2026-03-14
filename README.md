@@ -57,7 +57,8 @@ dotnet run
 |---|---|---|---|
 | GET | `/api/services` | Public | List active services (optional `?categoryId=`) |
 | GET | `/api/services/{id}` | Public | Get single service |
-| POST | `/api/services` | Provider | Create service |
+| POST | `/api/services` | Provider | Create service listing |
+| PUT | `/api/services/{id}` | Provider (owner) | Update own service listing |
 | GET | `/api/services/mine` | Provider | List my services |
 
 ### Orders
@@ -68,6 +69,13 @@ dotnet run
 | GET | `/api/orders/mine` | Customer | List my orders |
 | GET | `/api/orders/provider` | Provider | List orders assigned to me |
 | PATCH | `/api/orders/{id}/status` | Authenticated | Update order status |
+
+### Tracking
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/orders/{orderId}/tracking/ping` | Provider (assigned) | Post current GPS location |
+| GET | `/api/orders/{orderId}/tracking/latest` | Buyer / Provider / Admin | Get latest GPS ping |
+| GET | `/api/orders/{orderId}/tracking/history?limit=50` | Buyer / Provider / Admin | Get bounded ping history |
 
 ### Payments
 | Method | Path | Auth | Description |
@@ -92,11 +100,68 @@ dotnet run
 ## Order Status Flow
 
 ```
-created → awaiting_payment → paid → accepted → in_progress → completed
-   ↓            ↓             ↓         ↓
-cancelled    cancelled    cancelled  cancelled
+created → awaiting_payment → paid → accepted → on_the_way → in_progress → completed
+   ↓            ↓             ↓         ↓           ↓
+cancelled    cancelled    cancelled  cancelled   cancelled
                            ↓
                          refunded
+```
+
+Tracking pings (`POST /api/orders/{orderId}/tracking/ping`) are accepted in the
+`accepted`, `on_the_way`, and `in_progress` statuses only.
+
+## Seller Location Tracking
+
+Buyers can track the real-time GPS location of the assigned provider during active
+service fulfillment.
+
+### Flow
+
+```
+1. Seller moves order to "on_the_way"
+2. Seller app POSTs GPS pings periodically:
+       POST /api/orders/{orderId}/tracking/ping
+       { "latitude": -6.2088, "longitude": 106.8456, "accuracyMeters": 10 }
+3. Buyer polls for latest location:
+       GET  /api/orders/{orderId}/tracking/latest
+4. (Optional) Full ping history:
+       GET  /api/orders/{orderId}/tracking/history?limit=50
+```
+
+### Authorization rules for tracking
+
+| Action | Who can perform |
+|---|---|
+| Post ping | Only the provider assigned to the order |
+| Read latest/history | Order's buyer, assigned provider, or admin |
+| Ping allowed statuses | `accepted`, `on_the_way`, `in_progress` |
+
+### Ping request body
+
+```json
+{
+  "latitude": -6.2088,
+  "longitude": 106.8456,
+  "accuracyMeters": 10.5
+}
+```
+
+- `latitude`: required, range −90 to 90  
+- `longitude`: required, range −180 to 180  
+- `accuracyMeters`: optional, non-negative  
+
+### Ping response
+
+```json
+{
+  "id": "uuid",
+  "orderId": "uuid",
+  "providerId": "uuid",
+  "latitude": -6.2088,
+  "longitude": 106.8456,
+  "accuracyMeters": 10.5,
+  "timestampUtc": "2026-03-14T04:00:00Z"
+}
 ```
 
 ## Money Flow
