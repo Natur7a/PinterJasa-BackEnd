@@ -1,6 +1,8 @@
+using PinterJasa.API.Models.Interfaces;
+
 namespace PinterJasa.API.Models;
 
-public class User
+public class User : ISoftDeletable, IHasUpdatedAt
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -10,6 +12,7 @@ public class User
     public string Role { get; set; } = "customer";
     public string? AvatarUrl { get; set; }
     public bool IsVerified { get; set; } = false;
+    public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

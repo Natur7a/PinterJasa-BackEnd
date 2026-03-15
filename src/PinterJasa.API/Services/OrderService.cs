@@ -9,6 +9,7 @@ namespace PinterJasa.API.Services;
 public class OrderService : IOrderService
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<OrderService> _logger;
 
     private static readonly Dictionary<string, string[]> ValidTransitions = new()
     {
@@ -20,9 +21,10 @@ public class OrderService : IOrderService
         ["in_progress"] = new[] { "completed" }
     };
 
-    public OrderService(AppDbContext db)
+    public OrderService(AppDbContext db, ILogger<OrderService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<OrderResponse> CreateAsync(Guid customerId, CreateOrderRequest request)
@@ -46,6 +48,9 @@ public class OrderService : IOrderService
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Order {OrderId} created for customer {CustomerId} on service {ServiceId}",
+            order.Id, customerId, service.Id);
 
         await _db.Entry(order).Reference(o => o.Service).LoadAsync();
         return MapToResponse(order);
@@ -106,6 +111,10 @@ public class OrderService : IOrderService
             order.CompletedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Order {OrderId} status changed to {NewStatus} by user {RequesterId}",
+            orderId, newStatus, requesterId);
+
         return MapToResponse(order);
     }
 

@@ -1,6 +1,8 @@
+using PinterJasa.API.Models.Interfaces;
+
 namespace PinterJasa.API.Models;
 
-public class Provider
+public class Provider : ISoftDeletable, IHasUpdatedAt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
@@ -9,6 +11,7 @@ public class Provider
     public decimal AverageRating { get; set; } = 0;
     public int TotalReviews { get; set; } = 0;
     public bool IsActive { get; set; } = true;
+    public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? BankCode { get; set; }
