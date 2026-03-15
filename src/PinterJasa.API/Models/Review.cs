@@ -1,12 +1,15 @@
+using PinterJasa.API.Models.Interfaces;
+
 namespace PinterJasa.API.Models;
 
-public class Review
+public class Review : ISoftDeletable
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid OrderId { get; set; }
     public Guid ReviewerId { get; set; }
     public Guid ProviderId { get; set; }
     public int Rating { get; set; }
+    public bool IsDeleted { get; set; } = false;
     public string? Comment { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -8,8 +8,19 @@ using PinterJasa.API.Data;
 using PinterJasa.API.Middleware;
 using PinterJasa.API.Services;
 using PinterJasa.API.Services.Interfaces;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console());
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>

@@ -1,6 +1,8 @@
+using PinterJasa.API.Models.Interfaces;
+
 namespace PinterJasa.API.Models;
 
-public class Payout
+public class Payout : ISoftDeletable, IHasUpdatedAt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid OrderId { get; set; }
@@ -10,6 +12,7 @@ public class Payout
     public decimal CommissionAmount { get; set; }
     public decimal NetAmount { get; set; }
     public string Status { get; set; } = "pending";
+    public bool IsDeleted { get; set; } = false;
     public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

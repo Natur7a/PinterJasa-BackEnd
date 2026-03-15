@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PinterJasa.API.Models;
+using PinterJasa.API.Models.Interfaces;
 
 namespace PinterJasa.API.Data;
 
@@ -17,6 +18,31 @@ public class AppDbContext : DbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<PlatformConfig> PlatformConfigs => Set<PlatformConfig>();
     public DbSet<LocationPing> LocationPings => Set<LocationPing>();
+
+    public override int SaveChanges()
+    {
+        ApplySoftDeleteInterception();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplySoftDeleteInterception();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ApplySoftDeleteInterception()
+    {
+        foreach (var entry in ChangeTracker.Entries<ISoftDeletable>()
+                     .Where(e => e.State == EntityState.Deleted))
+        {
+            entry.State = EntityState.Modified;
+            entry.Entity.IsDeleted = true;
+
+            if (entry.Entity is IHasUpdatedAt auditable)
+                auditable.UpdatedAt = DateTime.UtcNow;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,8 +62,10 @@ public class AppDbContext : DbContext
             e.Property(u => u.Role).HasColumnName("role").HasMaxLength(20).IsRequired();
             e.Property(u => u.AvatarUrl).HasColumnName("avatar_url");
             e.Property(u => u.IsVerified).HasColumnName("is_verified");
+            e.Property(u => u.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(u => u.CreatedAt).HasColumnName("created_at");
             e.Property(u => u.UpdatedAt).HasColumnName("updated_at");
+            e.HasQueryFilter(u => !u.IsDeleted);
         });
 
         // Provider
@@ -52,6 +80,7 @@ public class AppDbContext : DbContext
             e.Property(p => p.AverageRating).HasColumnName("average_rating").HasPrecision(3, 2);
             e.Property(p => p.TotalReviews).HasColumnName("total_reviews");
             e.Property(p => p.IsActive).HasColumnName("is_active");
+            e.Property(p => p.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
             e.Property(p => p.BankCode).HasColumnName("bank_code").HasMaxLength(20);
@@ -60,6 +89,7 @@ public class AppDbContext : DbContext
             e.HasOne(p => p.User)
                 .WithOne(u => u.Provider)
                 .HasForeignKey<Provider>(p => p.UserId);
+            e.HasQueryFilter(p => !p.IsDeleted);
         });
 
         // Category
@@ -73,7 +103,9 @@ public class AppDbContext : DbContext
             e.Property(c => c.IconUrl).HasColumnName("icon_url");
             e.Property(c => c.CommissionRate).HasColumnName("commission_rate").HasPrecision(5, 4);
             e.Property(c => c.IsActive).HasColumnName("is_active");
+            e.Property(c => c.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(c => c.CreatedAt).HasColumnName("created_at");
+            e.HasQueryFilter(c => !c.IsDeleted);
         });
 
         // Service
@@ -89,6 +121,7 @@ public class AppDbContext : DbContext
             e.Property(s => s.Price).HasColumnName("price").HasPrecision(12, 2);
             e.Property(s => s.PriceUnit).HasColumnName("price_unit").HasMaxLength(20);
             e.Property(s => s.Status).HasColumnName("status").HasMaxLength(20);
+            e.Property(s => s.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(s => s.CreatedAt).HasColumnName("created_at");
             e.Property(s => s.UpdatedAt).HasColumnName("updated_at");
             e.HasOne(s => s.Provider)
@@ -97,6 +130,7 @@ public class AppDbContext : DbContext
             e.HasOne(s => s.Category)
                 .WithMany(c => c.Services)
                 .HasForeignKey(s => s.CategoryId);
+            e.HasQueryFilter(s => !s.IsDeleted);
         });
 
         // Order
@@ -114,6 +148,7 @@ public class AppDbContext : DbContext
             e.Property(o => o.Notes).HasColumnName("notes");
             e.Property(o => o.ScheduledAt).HasColumnName("scheduled_at");
             e.Property(o => o.CompletedAt).HasColumnName("completed_at");
+            e.Property(o => o.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(o => o.CreatedAt).HasColumnName("created_at");
             e.Property(o => o.UpdatedAt).HasColumnName("updated_at");
             e.HasOne(o => o.Customer)
@@ -127,6 +162,7 @@ public class AppDbContext : DbContext
                 .WithMany(p => p.Orders)
                 .HasForeignKey(o => o.ProviderId)
                 .OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(o => !o.IsDeleted);
         });
 
         // Payment
@@ -142,6 +178,7 @@ public class AppDbContext : DbContext
             e.Property(p => p.Status).HasColumnName("status").HasMaxLength(20);
             e.Property(p => p.GatewayRef).HasColumnName("gateway_ref");
             e.Property(p => p.PaidAt).HasColumnName("paid_at");
+            e.Property(p => p.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.XenditInvoiceId).HasColumnName("xendit_invoice_id");
             e.Property(p => p.XenditInvoiceUrl).HasColumnName("xendit_invoice_url");
@@ -152,6 +189,7 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.Payments)
                 .HasForeignKey(p => p.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(p => !p.IsDeleted);
         });
 
         // Payout
@@ -168,6 +206,7 @@ public class AppDbContext : DbContext
             e.Property(p => p.NetAmount).HasColumnName("net_amount").HasPrecision(12, 2);
             e.Property(p => p.Status).HasColumnName("status").HasMaxLength(20);
             e.Property(p => p.PaidAt).HasColumnName("paid_at");
+            e.Property(p => p.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(p => p.CreatedAt).HasColumnName("created_at");
             e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
             e.Property(p => p.XenditDisbursementId).HasColumnName("xendit_disbursement_id");
@@ -177,6 +216,7 @@ public class AppDbContext : DbContext
             e.HasOne(p => p.Provider)
                 .WithMany(prov => prov.Payouts)
                 .HasForeignKey(p => p.ProviderId);
+            e.HasQueryFilter(p => !p.IsDeleted);
         });
 
         // Review
@@ -190,6 +230,7 @@ public class AppDbContext : DbContext
             e.Property(r => r.ProviderId).HasColumnName("provider_id");
             e.Property(r => r.Rating).HasColumnName("rating");
             e.Property(r => r.Comment).HasColumnName("comment");
+            e.Property(r => r.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
             e.Property(r => r.CreatedAt).HasColumnName("created_at");
             e.HasIndex(r => r.OrderId).IsUnique();
             e.HasOne(r => r.Order)
@@ -203,6 +244,7 @@ public class AppDbContext : DbContext
                 .WithMany(p => p.Reviews)
                 .HasForeignKey(r => r.ProviderId)
                 .OnDelete(DeleteBehavior.Restrict);
+            e.HasQueryFilter(r => !r.IsDeleted);
         });
 
         // PlatformConfig

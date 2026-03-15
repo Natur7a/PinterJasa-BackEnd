@@ -1,12 +1,15 @@
+using PinterJasa.API.Models.Interfaces;
+
 namespace PinterJasa.API.Models;
 
-public class Order
+public class Order : ISoftDeletable, IHasUpdatedAt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CustomerId { get; set; }
     public Guid ServiceId { get; set; }
     public Guid ProviderId { get; set; }
     public string Status { get; set; } = "created";
+    public bool IsDeleted { get; set; } = false;
     public decimal TotalPrice { get; set; }
     public string? Address { get; set; }
     public string? Notes { get; set; }
